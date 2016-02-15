@@ -5,11 +5,11 @@ package vn.hoangphan.karaokearena.models;
  */
 public class Word {
     private String content;
-    private String note;
+    private int note;
     private int duration;
     private int processedAt;
 
-    public Word(String content, String note, int processedAt, int duration) {
+    public Word(String content, int note, int processedAt, int duration) {
         this.content = content;
         this.note = note;
         this.processedAt = processedAt;
@@ -24,11 +24,11 @@ public class Word {
         this.content = content;
     }
 
-    public String getNote() {
+    public int getNote() {
         return note;
     }
 
-    public void setNote(String note) {
+    public void setNote(int note) {
         this.note = note;
     }
 
