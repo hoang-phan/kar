@@ -10,19 +10,24 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.hardware.Camera;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.CamcorderProfile;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.style.ForegroundColorSpan;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.marvinlabs.widget.slideshow.SlideShowView;
 import com.marvinlabs.widget.slideshow.adapter.ResourceBitmapAdapter;
@@ -42,7 +47,7 @@ import vn.hoangphan.karaokearena.transitions.CustomTransitionFactory;
 import vn.hoangphan.karaokearena.utils.Constants;
 import vn.hoangphan.karaokearena.views.ProcessableTextView;
 
-public class KaraokeActivity extends Activity {
+public class KaraokeActivity extends Activity implements SurfaceHolder.Callback {
     public static final String URL = "https://www.dropbox.com/s/dnrop9jldn61zem/%5BKaraoke%20beat%5D%20Xe%20%C4%91%E1%BA%A1p%20-%20Th%C3%B9y%20Chi%20ft.%20M4U%20%28h%E1%BA%A1%201%20note%29.mp4?dl=1";
     public static final int UNPROCESSED_COLOR = 0xffff0000;
     public static final int PROCESSED_COLOR = 0xff0000ff;
@@ -57,7 +62,7 @@ public class KaraokeActivity extends Activity {
     private SlideShowView mMainSlides;
     private MediaPlayer mBeatPlayer;
     private List<Line> mLyric = new ArrayList<>();
-    private List<Point> mNotesPoint = new ArrayList<>();
+//    private List<Point> mNotesPoint = new ArrayList<>();
     private ProcessableTextView mLine1Tv;
     private ProcessableTextView mLine2Tv;
     private LinearLayout mScoreboardLy;
@@ -70,9 +75,14 @@ public class KaraokeActivity extends Activity {
     private Paint mPaint;
     private Bitmap mBitmap;
     private Handler mHandler;
-    private int mProcessing;
+    private Camera mCamera;
+    private MediaRecorder mMediaRecorder;
+    private SurfaceHolder mSurfaceHolder;
+    private SurfaceView mSurfaceView;
+    private boolean mRecording;
+//    private int mProcessing;
     private int mScoreboardHeight;
-    private int mNotePos;
+//    private int mNotePos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,11 +138,48 @@ public class KaraokeActivity extends Activity {
                 mScoreboardLy.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
+        mCamera = getCameraInstance();
+        if(mCamera == null){
+            Toast.makeText(this,
+                    "Fail to get Camera",
+                    Toast.LENGTH_LONG).show();
+        }
+
+        mCamera.unlock();
+        mMediaRecorder.setCamera(mCamera);
+
+        mSurfaceHolder = mSurfaceView.getHolder();
+        mSurfaceHolder.addCallback(this);
+        mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        mMediaRecorder.reset();
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+        CamcorderProfile camcorderProfile_HQ = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
+        mMediaRecorder.setProfile(camcorderProfile_HQ);
+        mMediaRecorder.setOutputFile("/sdcard/myvideo.mp4");
+        mMediaRecorder.setMaxDuration(360000);
+        mMediaRecorder.setMaxFileSize(30000000);
+        try {
+            mMediaRecorder.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         playFile();
     }
 
     private void initScoreboardHeight() {
         mScoreboardHeight = mScoreboardLy.getHeight() - 40;
+    }
+
+    private Camera getCameraInstance(){
+        Camera c = null;
+        try {
+            c = Camera.open(); // attempt to get a Camera instance
+        }
+        catch (Exception e){
+            // Camera is not available (in use or does not exist)
+        }
+        return c; // returns null if camera is unavailable
     }
 
     private void initComponents() {
@@ -145,20 +192,31 @@ public class KaraokeActivity extends Activity {
         mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE_HZ, CHANNEL_IN_CONFIG, ENCODING, getMinBufferSize());
         mTransformer = new ComplexDoubleFFT(Constants.RECORD_BUFFERED_SIZE);
         mHandler = new Handler();
+        mMediaRecorder = new MediaRecorder();
+        mRecording = false;
 
-        mMainSlides = (SlideShowView) findViewById(R.id.slides_main);
         mLine1Tv = (ProcessableTextView) findViewById(R.id.tv_line_1);
         mLine2Tv = (ProcessableTextView) findViewById(R.id.tv_line_2);
         mScoreboardLy = (LinearLayout) findViewById(R.id.ly_scoreboard);
         mDrawerIv = (ImageView) findViewById(R.id.iv_drawer);
+        mSurfaceView = (SurfaceView) findViewById(R.id.surface_view);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     private void playFile() {
-        startSlides();
+//        startSlides();
+        startVideoCapture();
         startBeat();
         startLyricDisplayer();
+    }
+
+    private void startVideoCapture() {
+        if (!mRecording) {
+            mMediaRecorder.start();
+            mRecording = true;
+        }
+
     }
 
     private void startLyricDisplayer() {
@@ -436,6 +494,8 @@ public class KaraokeActivity extends Activity {
         if (mBeatPlayer != null) {
             mBeatPlayer.pause();
         }
+        releaseMediaRecorder();       // if you are using MediaRecorder, release it first
+        releaseCamera();
     }
 
     @Override
@@ -455,6 +515,67 @@ public class KaraokeActivity extends Activity {
         }
         if (mAudioRecord != null) {
             mAudioRecord.release();
+        }
+        if (mMediaRecorder != null && mRecording) {
+            mMediaRecorder.stop();
+            mMediaRecorder.reset();
+            mMediaRecorder.release();
+            mMediaRecorder = null;
+        }
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        try {
+            mCamera.setPreviewDisplay(holder);
+            mCamera.startPreview();
+        } catch (IOException e) {
+        }
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        if (mSurfaceHolder.getSurface() == null){
+            // preview surface does not exist
+            return;
+        }
+
+        // stop preview before making changes
+        try {
+            mCamera.stopPreview();
+        } catch (Exception e){
+            // ignore: tried to stop a non-existent preview
+        }
+
+        // make any resize, rotate or reformatting changes here
+
+        // start preview with new settings
+        try {
+            mCamera.setPreviewDisplay(mSurfaceHolder);
+            mCamera.startPreview();
+
+        } catch (Exception e){
+        }
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+
+    }
+
+    private void releaseMediaRecorder(){
+        if (mMediaRecorder != null) {
+            mMediaRecorder.reset();   // clear recorder configuration
+            mMediaRecorder.release(); // release the recorder object
+            mMediaRecorder = null;
+            mCamera.lock();           // lock camera for later use
+        }
+    }
+
+    private void releaseCamera(){
+        if (mCamera != null){
+            mCamera.release();        // release the camera for other applications
+            mCamera = null;
         }
     }
 }
