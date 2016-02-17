@@ -53,5 +53,9 @@
             android:text="text 2"
             android:id="@+id/tv_line_2"/>
     </LinearLayout>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_start_stop"/>
 
 </FrameLayout>
