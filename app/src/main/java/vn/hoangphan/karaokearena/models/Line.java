@@ -1,59 +1,46 @@
 package vn.hoangphan.karaokearena.models;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import io.realm.RealmList;
+import io.realm.RealmObject;
+import io.realm.annotations.Index;
+import io.realm.annotations.PrimaryKey;
 
 /**
  * Created by Hoang Phan on 2/10/2016.
  */
-public class Line {
+
+public class Line extends RealmObject {
+    @PrimaryKey
+    private long id;
+
+    @Index
+    private long songId;
+
     private String content;
-    private List<WordWithPosition> words;
 
-    public Line() {
-        words = new ArrayList<>();
-        content = "";
-    }
-
-    public int length() {
-        return content.length();
-    }
-
-    public List<WordWithPosition> getWords() {
-        return words;
-    }
-
-    public void addWord(Word word) {
-        content += word.getContent() + " ";
-        words.add(new WordWithPosition(word, content.length()));
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public String getContent() {
         return content;
     }
 
-    public int getProcessedAt() {
-        return words.isEmpty() ? 0 : words.get(0).getWord().getProcessedAt();
+    public long getId() {
+        return id;
     }
 
-    //    public WordWithIndex getWordAt(int millis) {
-//        return getWordAt(millis, 0, words.size() - 1);
-//    }
-//
-//    public boolean isLastIndex(int index) {
-//        return index == words.size() - 1;
-//    }
+    public void setId(long id) {
+        this.id = id;
+    }
 
-//    private WordWithIndex getWordAt(int millis, int start, int end) {
-//        if (start >= end) {
-//            return new WordWithIndex(words.get(start), start);
-//        }
-//        int mid = (start + end + 1) / 2;
-//        Word word = words.get(mid);
-//        if (millis < word.getProcessedAt()) {
-//            return getWordAt(millis, start, mid - 1);
-//        } else {
-//            return getWordAt(millis, mid, end);
-//        }
-//    }
+    public long getSongId() {
+        return songId;
+    }
+
+    public void setSongId(long songId) {
+        this.songId = songId;
+    }
 }
