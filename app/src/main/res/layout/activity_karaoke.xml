@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="vn.hoangphan.karaokearena.KaraokeActivity">
+    tools:context=".activities.KaraokeActivity">
 
     <!--<com.marvinlabs.widget.slideshow.SlideShowView-->
         <!--android:layout_width="match_parent"-->

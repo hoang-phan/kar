@@ -1,14 +1,13 @@
-package vn.hoangphan.karaokearena;
+package vn.hoangphan.karaokearena.activities;
 
 import android.animation.ObjectAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
-import android.graphics.PorterDuff;
 import android.hardware.Camera;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -19,6 +18,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -30,17 +30,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import vn.hoangphan.karaokearena.R;
 import vn.hoangphan.karaokearena.analysis.ComplexDoubleFFT;
 import vn.hoangphan.karaokearena.models.Line;
 import vn.hoangphan.karaokearena.models.Word;
-import vn.hoangphan.karaokearena.models.WordWithPosition;
 import vn.hoangphan.karaokearena.utils.Constants;
 import vn.hoangphan.karaokearena.views.ProcessableTextView;
 
@@ -77,48 +75,11 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
     private int mScoreboardHeight;
     private Button mStartStopBtn;
     private boolean mInitSuccessful = false;
-//    private int mNotePos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_karaoke);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(getAssets().open("xedap.lyr")));
-                    String buf;
-                    Line line = null;
-                    while ((buf = reader.readLine()) != null) {
-                        if (buf.startsWith("-")) {
-                            if (line != null) {
-                                mLyric.add(line);
-                            }
-                            line = new Line();
-                            buf = buf.substring(1);
-                        }
-                        String[] components = buf.split(",");
-                        if (line != null) {
-                            line.addWord(new Word(components[0], Integer.valueOf(components[1]), Integer.valueOf(components[2]), Integer.valueOf(components[3])));
-                        }
-                    }
-                    if (line != null) {
-                        mLyric.add(line);
-                    }
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        initComponents();
-                        bindComponents();
-                    }
-                });
-            }
-        }).start();
     }
 
     private void bindComponents() {
@@ -137,11 +98,13 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
 
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
         try {
-                       mMediaRecorder.prepare();
+            mMediaRecorder.prepare();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         mStartStopBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -154,17 +117,6 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
 
     private void initScoreboardHeight() {
         mScoreboardHeight = mScoreboardLy.getHeight() - 40;
-    }
-
-    private Camera getCameraInstance(){
-        Camera c = null;
-        try {
-            c = Camera.open(); // attempt to get a Camera instance
-        }
-        catch (Exception e){
-            // Camera is not available (in use or does not exist)
-        }
-        return c; // returns null if camera is unavailable
     }
 
     private void initComponents() {
@@ -192,32 +144,15 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
 
     private void playFile() {
         startVideoCapture();
-//        startBeat();
+        startBeat();
         startLyricDisplayer();
     }
 
     private void startVideoCapture() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                startVideoCapture(3);
-            }
-        }).start();
-    }
-
-    private void startVideoCapture(int attempts) {
-        if (attempts < 0) {
-            return;
-        }
         if (mInitSuccessful) {
             mMediaRecorder.start();
         } else {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            startVideoCapture(attempts - 1);
+            Log.e("error", "cannot start media recorder");
         }
     }
 
@@ -229,12 +164,11 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
             Line currentLine = mLyric.get(i);
             int lastPosition = 0;
             final int iClone = i;
-            List<WordWithPosition> words = currentLine.getWords();
+            List<Word> words = new ArrayList<>();
 
             for (int j = 0; j < words.size(); j++) {
-                WordWithPosition wordWithPosition = words.get(j);
-                final Word word = wordWithPosition.getWord();
-                final int position = wordWithPosition.getPosition();
+                final Word word = words.get(j);
+                final int position = word.getPosition();
                 final int lastPositionClone = lastPosition;
                 final int jClone = j;
                 lastPosition = position;
@@ -249,7 +183,7 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
                             processing = mLine2Tv;
                             next = mLine1Tv;
                         }
-                        if (jClone == 0 && iClone < size - 1 ) {
+                        if (jClone == 0 && iClone < size - 1) {
                             next.setText(mLyric.get(iClone + 1).getContent());
                         }
                         ObjectAnimator animator = ObjectAnimator.ofInt(processing, "processedPosition", lastPositionClone, position);
@@ -259,172 +193,16 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
                 }, word.getProcessedAt());
             }
         }
-
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                if (mLyric.size() >= 2) {
-//                    final Line firstLine = mLyric.get(0);
-//                    runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            mLine1Tv.setText(firstLine.toString());
-//                            mLine2Tv.setText(mLyric.get(1).toString());
-//                            drawScoreboard(firstLine);
-//                        }
-//                    });
-//                    TextView processingTv = mLine1Tv;
-//
-//                    int duration = mBeatPlayer.getDuration();
-//                    int current, size;
-//                    int translate = 0;
-//                    long start = System.currentTimeMillis();
-//
-//                    mNotePos = -1;
-//                    mProcessing = 0;
-//
-//                    while ((current = (int)(System.currentTimeMillis() - start)) < duration) {
-//                        size = mLyric.size();
-//                        final Line currentLine = mLyric.get(mProcessing);
-//                        int lineLength = currentLine.getLength();
-//                        int fromLineStart = current - currentLine.getWords().get(0).getProcessedAt();
-//                        WordWithIndex wordWithIndex = currentLine.getWordAt(current);
-//                        Word word = wordWithIndex.getWord();
-//                        int index = wordWithIndex.getPosition();
-//
-//                        int timespan = current - word.getProcessedAt();
-//
-//                        if (timespan < 0) {
-//                            try {
-//                                Thread.sleep(100);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                            continue;
-//                        }
-//
-//                        String wholeString = currentLine.toString();
-//                        final Spannable text = new SpannableStringBuilder(wholeString);
-//
-//                        if (timespan <= word.getDuration()) {
-//                            String processed = currentLine.toString(0, index - 1);
-//                            int wordLen = word.getContent().length();
-//                            int processedEnd = processed.length() + wordLen * timespan / word.getDuration();
-//                            text.setSpan(mProcessedSpan, 0, processedEnd, 0);
-//                            text.setSpan(mUnprocessedSpan, processedEnd, wholeString.length(), 0);
-//                            final TextView finalProcessingTv = processingTv;
-//                            runOnUiThread(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    finalProcessingTv.setText(text);
-//                                }
-//                            });
-//
-//                            int sungNote = lookUpNotePos(getFrequency());
-//                            int wordNote = word.getNote();
-//
-//                            // uninitialized
-//                            if (mNotePos < 0) {
-//                                translate = sungNote - wordNote;
-//                                mNotePos = wordNote;
-//                            } else {
-//                                mNotePos = sungNote - translate;
-//                            }
-//
-//                            if (mNotePos < 10 && mNotePos >= 0) {
-//                                mNotesPoint.add(new Point(fromLineStart * 1000 / lineLength, 200 - mNotePos * 20));
-//                            }
-//                            for (Point p : mNotesPoint) {
-//                                Log.d("Point:", current + ": " + p.x + " - " + p.y);
-//                            }
-//
-//                            final List<Point> notesPoints = mNotesPoint;
-//
-//                            runOnUiThread(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    drawNotes(notesPoints);
-//                                }
-//                            });
-//                        } else {
-//                            final TextView finalProcessingTv = processingTv;
-//                            text.setSpan(mProcessedSpan, 0, wholeString.length(), 0);
-//                            final CountDownLatch countDownLatch = new CountDownLatch(1);
-//                            runOnUiThread(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    finalProcessingTv.setText(text);
-//                                    countDownLatch.countDown();
-//                                }
-//                            });
-//                            countDownLatch.countDown();
-//                            mProcessing += 1;
-//                            if (size <= mProcessing) {
-//                                break;
-//                            }
-//                            runOnUiThread(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    drawScoreboard(mLyric.get(mProcessing));
-//                                }
-//                            });
-//
-//                            if (size > mProcessing + 1) {
-//                                runOnUiThread(new Runnable() {
-//                                    @Override
-//                                    public void run() {
-//                                        finalProcessingTv.setText(mLyric.get(mProcessing + 1).toString());
-//                                    }
-//                                });
-//                            }
-//
-//                            processingTv = processingTv == mLine1Tv ? mLine2Tv : mLine1Tv;
-//                            mNotePos = -1;
-//                            mNotesPoint.clear();
-//                        }
-//                    }
-//                    try {
-//                        Thread.sleep(50);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
     }
-
-    private void drawNotes(List<Point> points) {
-        mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        for (int i = 0; i < points.size() - 1; i++) {
-            Point point = points.get(i);
-            Point nextPoint = points.get(i + 1);
-            if (point != null && nextPoint != null) {
-                mCanvas.drawLine(point.x, point.y, nextPoint.x, nextPoint.y, mPaint);
-            }
-            mDrawerIv.invalidate();
-        }
-    }
-
-//    private void drawScoreboard(Line line) {
-//        mScoreboardLy.removeAllViews();
-//        for (Word word : line.getWords()) {
-//            View view = new View(this);
-//            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, 20, word.getDuration());
-//            params.setMargins(10, 10 + mScoreboardHeight - word.getNote() * mScoreboardHeight / 10, 10, 10);
-//            view.setLayoutParams(params);
-//            view.setBackgroundColor(UNPROCESSED_COLOR);
-//            mScoreboardLy.addView(view);
-//        }
-//    }
 
     private void startBeat() {
         try {
-//            AssetFileDescriptor descriptor = getAssets().openFd("Xedap-beat.mp3");
-//            mBeatPlayer.setDataSource(descriptor.getFileDescriptor(), descriptor.getStartOffset(), descriptor.getLength());
-//            mBeatPlayer.prepare();
-//            mBeatPlayer.setVolume(1f, 1f);
-//            mBeatPlayer.setLooping(false);
-//            mBeatPlayer.start();
+            AssetFileDescriptor descriptor = getAssets().openFd("Xedap-beat.mp3");
+            mBeatPlayer.setDataSource(descriptor.getFileDescriptor(), descriptor.getStartOffset(), descriptor.getLength());
+            mBeatPlayer.prepare();
+            mBeatPlayer.setVolume(1f, 1f);
+            mBeatPlayer.setLooping(false);
+            mBeatPlayer.start();
 
             mAudioRecord.startRecording();
 
@@ -515,6 +293,7 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
         mMediaRecorder.setVideoFrameRate(15);
 
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         mMediaRecorder.prepare();
 
         mInitSuccessful = true;
@@ -550,12 +329,13 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                bruteInit(3);
+        try {
+            if (!mInitSuccessful) {
+                initRecorder(mSurfaceHolder.getSurface());
             }
-        }).start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -575,23 +355,5 @@ public class KaraokeActivity extends Activity implements SurfaceHolder.Callback 
         }
         mMediaRecorder = null;
         mCamera = null;
-    }
-
-    private void bruteInit(int maxAttempt) {
-        if (maxAttempt < 0) {
-            return;
-        }
-        try {
-            if (!mInitSuccessful) {
-                initRecorder(mSurfaceHolder.getSurface());
-            }
-        } catch (IOException e) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }
-            bruteInit(maxAttempt - 1);
-        }
     }
 }
