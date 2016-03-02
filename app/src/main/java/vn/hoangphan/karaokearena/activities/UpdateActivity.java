@@ -1,5 +1,6 @@
 package vn.hoangphan.karaokearena.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,7 +12,6 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
-import io.realm.RealmObject;
 import retrofit.Call;
 import retrofit.Callback;
 import retrofit.Response;
@@ -23,13 +23,11 @@ import vn.hoangphan.karaokearena.db.DatabaseHelper;
 import vn.hoangphan.karaokearena.models.Patch;
 import vn.hoangphan.karaokearena.models.net.PatchesResponse;
 import vn.hoangphan.karaokearena.net.APIService;
+import vn.hoangphan.karaokearena.tasks.UpdateService;
 
 public class UpdateActivity extends AppCompatActivity {
     private PatchesAdapter mAdapter;
     private LinearLayoutManager mLayoutManager;
-    private Realm mRealm;
-    RealmConfiguration mConfiguration;
-
     private RecyclerView mPatchesRv;
 
     @Override
@@ -44,9 +42,8 @@ public class UpdateActivity extends AppCompatActivity {
     private void initComponents() {
         mAdapter = new PatchesAdapter();
         mLayoutManager = new LinearLayoutManager(this);
-        mConfiguration = new RealmConfiguration.Builder(this).build();
 
-        mRealm = Realm.getInstance(this);
+        DatabaseHelper.init(this);
         mPatchesRv = (RecyclerView) findViewById(R.id.rv_patches);
     }
 
@@ -54,7 +51,8 @@ public class UpdateActivity extends AppCompatActivity {
         mAdapter.setOnPatchItemClicked(new OnPatchItemClicked() {
             @Override
             public void update(Patch patch) {
-                Toast.makeText(UpdateActivity.this, patch.getLink(), Toast.LENGTH_LONG).show();
+                UpdateService.addToDownload(patch);
+                startService(new Intent(UpdateActivity.this, UpdateService.class));
             }
         });
         mPatchesRv.setLayoutManager(mLayoutManager);
@@ -66,7 +64,7 @@ public class UpdateActivity extends AppCompatActivity {
             public void onResponse(Response<PatchesResponse> patchesResponse, Retrofit retrofit) {
                 List<Patch> patches = patchesResponse.body().getPatches();
                 Log.e("patches", patches.toString());
-                DatabaseHelper.save(mRealm, patches);
+                DatabaseHelper.getInstance().save(patches);
                 mAdapter.setPatches(patches);
                 mAdapter.notifyDataSetChanged();
             }

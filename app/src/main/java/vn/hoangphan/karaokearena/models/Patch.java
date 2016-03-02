@@ -14,7 +14,7 @@ public class Patch extends RealmObject {
     private String link;
 
     @PrimaryKey
-    private String version;
+    private long version;
 
     public String getLink() {
         return link;
@@ -24,11 +24,11 @@ public class Patch extends RealmObject {
         this.link = link;
     }
 
-    public String getVersion() {
+    public long getVersion() {
         return version;
     }
 
-    public void setVersion(String version) {
+    public void setVersion(long version) {
         this.version = version;
     }
 }

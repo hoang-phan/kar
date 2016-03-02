@@ -28,4 +28,5 @@ dependencies {
     compile 'com.squareup.retrofit:converter-jackson:2.0.0-beta2'
     compile 'io.realm:realm-android:0.87.5'
     compile 'io.reactivex:rxjava:1.1.0'
+    compile 'net.sf.opencsv:opencsv:2.3'
 }
