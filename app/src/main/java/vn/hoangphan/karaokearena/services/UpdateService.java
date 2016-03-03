@@ -1,8 +1,7 @@
-package vn.hoangphan.karaokearena.tasks;
+package vn.hoangphan.karaokearena.services;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
