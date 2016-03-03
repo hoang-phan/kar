@@ -6,12 +6,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.util.List;
 
-import io.realm.Realm;
-import io.realm.RealmConfiguration;
 import retrofit.Call;
 import retrofit.Callback;
 import retrofit.Response;
@@ -23,7 +20,7 @@ import vn.hoangphan.karaokearena.db.DatabaseHelper;
 import vn.hoangphan.karaokearena.models.Patch;
 import vn.hoangphan.karaokearena.models.net.PatchesResponse;
 import vn.hoangphan.karaokearena.net.APIService;
-import vn.hoangphan.karaokearena.tasks.UpdateService;
+import vn.hoangphan.karaokearena.services.UpdateService;
 
 public class UpdateActivity extends AppCompatActivity {
     private PatchesAdapter mAdapter;
