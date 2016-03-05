@@ -40,7 +40,7 @@ public class PatchesAdapter extends RecyclerView.Adapter<PatchesAdapter.PatchHol
     @Override
     public void onBindViewHolder(PatchHolder holder, int position) {
         final Patch patch = mPatchList.get(position);
-        holder.mVersionTv.setText(patch.getVersion());
+        holder.mVersionTv.setText("Version: " + patch.getVersion());
         holder.mUpdateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
