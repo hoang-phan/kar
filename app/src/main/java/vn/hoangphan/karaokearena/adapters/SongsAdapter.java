@@ -4,6 +4,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,10 @@ public class SongsAdapter extends RecyclerView.Adapter<SongsAdapter.SongHolder> 
 
     @Override
     public void onBindViewHolder(SongHolder holder, int position) {
-
+        Song song = mSongList.get(position);
+        holder.mNameTv.setText(song.getName());
+        holder.mAuthorTv.setText(song.getAuthor());
+        holder.mSingerTv.setText(song.getSinger());
     }
 
     @Override
@@ -38,9 +42,13 @@ public class SongsAdapter extends RecyclerView.Adapter<SongsAdapter.SongHolder> 
     }
 
     public static class SongHolder extends RecyclerView.ViewHolder {
+        private TextView mNameTv, mAuthorTv, mSingerTv;
 
-        public SongHolder(View itemView) {
-            super(itemView);
+        public SongHolder(View view) {
+            super(view);
+            mNameTv = (TextView) view.findViewById(R.id.tv_song_name);
+            mAuthorTv = (TextView) view.findViewById(R.id.tv_song_author);
+            mSingerTv = (TextView) view.findViewById(R.id.tv_song_singer);
         }
     }
 }

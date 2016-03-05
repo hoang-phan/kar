@@ -2,6 +2,7 @@ package vn.hoangphan.karaokearena.services;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -13,7 +14,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import au.com.bytecode.opencsv.CSVReader;
-import vn.hoangphan.karaokearena.db.DatabaseHelper;
+import vn.hoangphan.karaokearena.db.DatabaseUtils;
 import vn.hoangphan.karaokearena.models.Patch;
 import vn.hoangphan.karaokearena.models.Song;
 
@@ -50,6 +51,7 @@ public class UpdateService extends IntentService {
 
                     CSVReader reader = new CSVReader(new InputStreamReader(url.openStream()));
                     List<String> headers = Arrays.asList(reader.readNext());
+                    Log.d("headers", headers.toString());
 
                     int columnId = headers.indexOf("id"),
                             columnName = headers.indexOf("name"),
@@ -75,7 +77,9 @@ public class UpdateService extends IntentService {
                         songs.add(song);
                     }
 
-                    DatabaseHelper.getInstance().save(songs);
+                    Log.d("Read songs", "Found " + songs.size());
+
+                    DatabaseUtils.save(this, songs);
                     Thread.sleep(200);
                 } catch (IOException e) {
                     e.printStackTrace();
