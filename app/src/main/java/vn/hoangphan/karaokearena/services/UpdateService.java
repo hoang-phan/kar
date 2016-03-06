@@ -80,6 +80,7 @@ public class UpdateService extends IntentService {
                     Log.d("Read songs", "Found " + songs.size());
 
                     DatabaseUtils.save(this, songs);
+                    DatabaseUtils.onPatchUpdated(this, patch);
                     Thread.sleep(200);
                 } catch (IOException e) {
                     e.printStackTrace();

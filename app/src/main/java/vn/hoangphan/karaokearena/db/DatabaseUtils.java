@@ -22,10 +22,26 @@ public class DatabaseUtils {
         realm.commitTransaction();
     }
 
-    public static List<Song> getAllSongs(Context context) {
+    public static List<Patch> notUpdatedPatches(Context context) {
+        List<Patch> patches = new ArrayList<>();
+        patches.addAll(Realm.getInstance(context).where(Patch.class).equalTo("updated", false).findAll());
+        return patches;
+    }
+
+    public static void onPatchUpdated(Context context, Patch patch) {
         Realm realm = Realm.getInstance(context);
+        realm.beginTransaction();
+        patch.setUpdated(true);
+        realm.commitTransaction();
+    }
+
+    public static List<Song> getAllSongs(Context context) {
         List<Song> songs = new ArrayList<>();
-        songs.addAll(realm.allObjects(Song.class));
+        songs.addAll(Realm.getInstance(context).allObjects(Song.class));
         return songs;
+    }
+
+    public static void reset(Context context) {
+        Realm.deleteRealm(new RealmConfiguration.Builder(context).build());
     }
 }
