@@ -71,7 +71,7 @@ public class UpdateActivity extends AppCompatActivity {
                 List<Patch> patches = patchesResponse.body().getPatches();
                 Log.e("patches", patches.toString());
                 DatabaseUtils.save(UpdateActivity.this, patches);
-                mAdapter.setPatches(patches);
+                mAdapter.setPatches(DatabaseUtils.notUpdatedPatches(UpdateActivity.this));
                 mAdapter.notifyDataSetChanged();
             }
 

@@ -3,6 +3,7 @@ package vn.hoangphan.karaokearena.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import io.realm.RealmObject;
+import io.realm.annotations.Index;
 import io.realm.annotations.PrimaryKey;
 
 /**
@@ -15,6 +16,9 @@ public class Patch extends RealmObject {
 
     @PrimaryKey
     private long version;
+
+    @Index
+    private boolean updated;
 
     public String getLink() {
         return link;
@@ -30,5 +34,13 @@ public class Patch extends RealmObject {
 
     public void setVersion(long version) {
         this.version = version;
+    }
+
+    public boolean isUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(boolean updated) {
+        this.updated = updated;
     }
 }
